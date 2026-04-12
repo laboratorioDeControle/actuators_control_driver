@@ -1,0 +1,9 @@
+
+actuators_control_driver:
+	ros__parameters:
+		start_still_duration: 10
+		start_thruster_duration: 5
+		alternancia_duration: 0.5
+		thruster_power: 0.5
+		rudder_angle_deg: 20
+		num_alternancias: 4
