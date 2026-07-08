@@ -5,9 +5,7 @@ from actuators_control_driver.servo import Servo
 
 import rclpy
 from rclpy.node import Node
-from std_msgs.msg import Float64MultiArray
-
-import can
+from std_msgs.msg import Float64MultiArray, UInt8MultiArray
 
 
 class ControlNode(Node):
@@ -15,12 +13,6 @@ class ControlNode(Node):
         super().__init__('control_node')
 
         self.get_logger().info("Inicializando ControlNode...")
-
-        # ======================================================
-        # Inicialização Barramento CAN / Hardware
-        # ======================================================
-        self._can_bus = can.interface.Bus(channel='can0', bustype='socketcan', bitrate=250000)
-
         # ======================================================
         # Inicialização dos dispositivos
         # ======================================================
@@ -44,6 +36,8 @@ class ControlNode(Node):
             '/lauv/controller/rudders_setpoints',
             self.rudder_callback,
             10)
+        
+        self.can_bus_pub = self.create_publisher(UInt8MultiArray, '/actuators_signals', 10)
 
         self.get_logger().info('ControlNode iniciado com sucesso.')
 
@@ -137,9 +131,11 @@ class ControlNode(Node):
         ]
 
         msg_list += self._thruster.msg_field
-        can_msg = can.Message(arbitration_id=0x001, data=msg_list, is_extended_id=False)
-        print(msg_list)
-        self._can_bus.send(can_msg)
+
+        msg = UInt8MultiArray()
+        msg.data = msg_list
+
+        self.can_bus_pub.publish(msg)
 
 
 def main(args=None):

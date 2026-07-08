@@ -60,7 +60,7 @@ class Thruster:
 
         result.append(self.direction)
         result.append(int_rotation)
-        result.append(self.enable)
+        result.append(self._enable)
 
         return result
 
