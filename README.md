@@ -3,58 +3,40 @@
 
 ## Overview
 
-`actuators_control_driver` is a ROS 2 package responsible for controlling the thruster and rudders of the VSA (Veículo Submarino Autônomo). It interfaces with hardware actuators and receives setpoints via ROS 2 topics to command the vehicle's propulsion and steering mechanisms.
-
-## Responsibilities
-- Controls the thruster and four rudders of the VSA.
-- Subscribes to the following ROS 2 topics for actuator setpoints:
-  - `/controller/thrusters_setpoints`: Receives thruster speed setpoints as a `Float64MultiArray`.
-  - `/controller/rudders_setpoints`: Receives rudder angle setpoints (in radians) as a `Float64MultiArray` for four rudders.
-- Converts received setpoints to hardware commands using GPIO via the `pigpio` library.
-
-## Main Components
-- `control_node.py`: Implements the ROS 2 node that subscribes to the setpoint topics and commands the thruster and rudders accordingly.
-- `guidance_simulator.py`: Provides a simulator node that publishes example setpoints to the control topics for testing and development purposes.
-
-## Installation
-
-Before running the package, ensure you have the required dependencies installed:
-
-```bash
-pip install pigpio gpiozero
-```
-
-## Usage
-
-1. Give permission with:
-    ```bash
-    sudo pigpiod 
-    ```
-2. Start the ROS 2 node to control actuators:
-	```bash
-	ros2 run actuators_control_driver control_node
-	```
-3. (Optional) Run the simulator to publish test setpoints:
-	```bash
-	ros2 run actuators_control_driver guidance_simulator
-	```
-4. (Optional) Publish test setpoints individually:
-	```bash
-	ros2 topic pub --once /controller/rudders_setpoints std_msgs/msg/Float64MultiArray "data: [-1.5, -0.0, 0.0, 0.0]"
-	or
-	ros2 topic pub --once /controller/thruster_setpoints std_msgs/msg/Float64MultiArray "data: [0.5]"
-	or
-	ros2 topic pub -r 1 /controller/rudders_setpoints std_msgs/msg/Float64MultiArray "data: [-1.5, -0.0, 0.0, 0.0]"
-	or
-	ros2 topic pub -r 1 /controller/thruster_setpoints std_msgs/msg/Float64MultiArray "data: [0.5]"
-	```
+`actuators_control_driver` is a ROS 2 package responsible for receiving the thruster and rudders setpoint signals from the guidance system of the VSA (Veículo Submarino Autônomo) and converting them to a single CAN word which will be published to CAN node.
 
 ## Topics
-- `/controller/thrusters_setpoints` (`std_msgs/msg/Float64MultiArray`): Thruster speed setpoints.
-- `/controller/rudders_setpoints` (`std_msgs/msg/Float64MultiArray`): Rudder angle setpoints (in radians).
+- Subscribes to:
+  - `/controller/thrusters_setpoints`: Receives thruster speed percentage setpoints as a `Float64MultiArray`. 
+  Range: [-1.0] ~ [1.0]
+  - `/controller/rudders_setpoints`: Receives rudder angle setpoints (in radians) as a `Float64MultiArray` for four rudders.
+  Range: [-0.785, -0.785, -0.785, -0.785] ~ [0.785, 0.785, 0.785, 0.785]. Each servo is limited between -45° to 45°.
+- Publishes to:
+  - `/actuators_can_tx`: Sends a CAN word of type `UInt8MultiArray`.
+
+## Main Components
+- `control_node.py`: The `thruster_callback` and `rudder_callback` update the variables and call for send_can_msg() which will concatenate the data in 7 bytes of format [top, down, left, righ, direction, speed, enable].
+- `actuators_test.py`: Basic actuators test.
 
 ## Dependencies
 - rclpy
 - std_msgs
-- pigpio (Python library)
-- gpiozero
+
+## Usage
+
+1. Start the ROS 2 node to control actuators:
+	```bash
+	ros2 run actuators_control_driver control_node
+	```
+
+2. (Optional) Publish test setpoints individually:
+	```bash
+	ros2 topic pub --once /controller/rudders_setpoints std_msgs/msg/Float64MultiArray "data: [-1.5, 0.0, 0.0, 0.0]"
+	```
+	**Output on `/actuators_can_tx`:** `[47, 128, 128, 128, 0, 0, 0]` (decimal) 
+	
+	or
+	```bash
+	ros2 topic pub --once /controller/thrusters_setpoints std_msgs/msg/Float64MultiArray "data: [0.5]"
+	```
+	**Output on `/actuators_can_tx`:** `[128, 128, 128, 128, 0, 128, 1]` (decimal) 
