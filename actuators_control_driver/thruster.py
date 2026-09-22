@@ -10,9 +10,9 @@ class Thruster:
     @rotation_percent.setter
     def rotation_percent(self, value: float):
         if value < 0:
-            self.direction = Motor_CounterClockwise
-        else:
             self.direction = Motor_Clockwise
+        else:
+            self.direction = Motor_CounterClockwise
 
         if not self._stop:
             self._rotation_percent = abs(value)

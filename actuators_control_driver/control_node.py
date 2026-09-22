@@ -68,7 +68,7 @@ class ControlNode(Node):
             return
 
         raw_value = msg.data[0]
-        clamped_value = self.clamp(raw_value, 0.0, 1.0)
+        clamped_value = self.clamp(raw_value, -1.0, 1.0)
 
         if raw_value != clamped_value:
             self.get_logger().warn(
@@ -114,10 +114,10 @@ class ControlNode(Node):
 
         # Aplica os ângulos aos servos (os offsets são aplicados em msg_field)
         # Os offsets são somados após o mapeamento, não estando sujeitos à restrição de margem do ângulo
-        self._servo_top.angle = clamped_angles[0]
-        self._servo_right.angle = clamped_angles[1]
-        self._servo_down.angle = clamped_angles[2]
-        self._servo_left.angle = clamped_angles[3]
+        self._servo_top.angle = clamped_angles[3]
+        self._servo_right.angle = clamped_angles[2]
+        self._servo_down.angle = clamped_angles[1]
+        self._servo_left.angle = clamped_angles[0]
 
         self.send_can_msg()
 
@@ -157,10 +157,10 @@ class ControlNode(Node):
 
     def send_can_msg(self):
         msg_list: list = [
-            self._servo_top.msg_field,
-            self._servo_right.msg_field,
+            self._servo_left.msg_field,
             self._servo_down.msg_field,
-            self._servo_left.msg_field
+            self._servo_right.msg_field,
+            self._servo_top.msg_field
         ]
 
         msg_list += self._thruster.msg_field
